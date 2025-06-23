@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YM2149 WebAudio Synthesizer Demo</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .channel {
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 5px;
+            background: #222;
+        }
+        
+        .channel h3 {
+            margin-top: 0;
+            color: #ffff00;
+        }
+        
+        .control-group {
+            margin: 10px 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        input[type="number"] {
+            width: 60px;
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #555;
+            padding: 2px;
+        }
+        
+        button {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #555;
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        
+        button:hover {
+            background: #444;
+        }
+        
+        button.active {
+            background: #006600;
+            color: white;
+        }
+        
+        .keyboard {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .key {
+            width: 40px;
+            height: 120px;
+            border: 1px solid #333;
+            margin: 1px;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 10px;
+            font-size: 10px;
+        }
+        
+        .key.white {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .key.black {
+            background: #333;
+            color: #fff;
+            height: 80px;
+            width: 25px;
+            margin-left: -13px;
+            margin-right: -12px;
+            z-index: 1;
+        }
+        
+        .key.pressed {
+            background: #ff6600 !important;
+        }
+        
+        .status {
+            background: #111;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .error {
+            color: #ff0000;
+            background: #330000;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>YM2149 WebAudio Synthesizer</h1>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button id="startBtn">Start Audio</button>
+            <button id="stopBtn">Stop Audio</button>
+            <button id="resetBtn">Reset</button>
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div class="controls">
+            <div class="channel" id="channel0">
+                <h3>Channel A</h3>
+                <div class="control-group">
+                    <label>Volume: <span id="vol0">0</span></label>
+                    <input type="range" id="volume0" min="0" max="15" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Synth Type: <span id="type0">0</span></label>
+                    <input type="range" id="synthType0" min="0" max="7" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Transpose: <span id="trans0">64</span></label>
+                    <input type="range" id="transpose0" min="0" max="127" value="64">
+                </div>
+                <div class="control-group">
+                    <label>Detune: <span id="detune0">64</span></label>
+                    <input type="range" id="detune0" min="0" max="127" value="64">
+                </div>
+            </div>
+            
+            <div class="channel" id="channel1">
+                <h3>Channel B</h3>
+                <div class="control-group">
+                    <label>Volume: <span id="vol1">0</span></label>
+                    <input type="range" id="volume1" min="0" max="15" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Synth Type: <span id="type1">0</span></label>
+                    <input type="range" id="synthType1" min="0" max="7" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Transpose: <span id="trans1">64</span></label>
+                    <input type="range" id="transpose1" min="0" max="127" value="64">
+                </div>
+                <div class="control-group">
+                    <label>Detune: <span id="detune1">64</span></label>
+                    <input type="range" id="detune1" min="0" max="127" value="64">
+                </div>
+            </div>
+            
+            <div class="channel" id="channel2">
+                <h3>Channel C</h3>
+                <div class="control-group">
+                    <label>Volume: <span id="vol2">0</span></label>
+                    <input type="range" id="volume2" min="0" max="15" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Synth Type: <span id="type2">0</span></label>
+                    <input type="range" id="synthType2" min="0" max="7" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Transpose: <span id="trans2">64</span></label>
+                    <input type="range" id="transpose2" min="0" max="127" value="64">
+                </div>
+                <div class="control-group">
+                    <label>Detune: <span id="detune2">64</span></label>
+                    <input type="range" id="detune2" min="0" max="127" value="64">
+                </div>
+            </div>
+        </div>
+        
+        <div class="keyboard" id="keyboard">
+            <!-- Piano keyboard will be generated by JavaScript -->
+        </div>
+        
+        <div class="status" id="status">
+            Status: Not initialized
+        </div>
+    </div>
+
+    <script type="module">
+        import { YM2149SynthInterface } from '../audio/ym2149-synth-interface.js';
+        
+        class YM2149Demo {
+            constructor() {
+                this.synth = new YM2149SynthInterface();
+                this.currentChannel = 0;
+                this.pressedKeys = new Set();
+                this.isInitialized = false;
+                
+                this.setupUI();
+                this.createKeyboard();
+                this.setupEventListeners();
+            }
+            
+            async init() {
+                try {
+                    await this.synth.initialize();
+                    this.isInitialized = true;
+                    this.updateStatus('Initialized - Click Start Audio to begin');
+                } catch (error) {
+                    this.showError(`Initialization failed: ${error.message}`);
+                }
+            }
+            
+            setupUI() {
+                // Set up control event listeners
+                for (let channel = 0; channel < 3; channel++) {
+                    // Volume
+                    const volumeSlider = document.getElementById(`volume${channel}`);
+                    const volumeLabel = document.getElementById(`vol${channel}`);
+                    volumeSlider.addEventListener('input', (e) => {
+                        const value = parseInt(e.target.value);
+                        volumeLabel.textContent = value;
+                        if (this.isInitialized) {
+                            this.synth.audioManager.setVolume(channel, value);
+                        }
+                    });
+                    
+                    // Synth Type
+                    const typeSlider = document.getElementById(`synthType${channel}`);
+                    const typeLabel = document.getElementById(`type${channel}`);
+                    typeSlider.addEventListener('input', (e) => {
+                        const value = parseInt(e.target.value);
+                        typeLabel.textContent = value;
+                        if (this.isInitialized) {
+                            this.synth.setSynthType(channel, value);
+                        }
+                    });
+                    
+                    // Transpose
+                    const transposeSlider = document.getElementById(`transpose${channel}`);
+                    const transposeLabel = document.getElementById(`trans${channel}`);
+                    transposeSlider.addEventListener('input', (e) => {
+                        const value = parseInt(e.target.value);
+                        transposeLabel.textContent = value;
+                        if (this.isInitialized) {
+                            this.synth.setTranspose(channel, value);
+                        }
+                    });
+                    
+                    // Detune
+                    const detuneSlider = document.getElementById(`detune${channel}`);
+                    const detuneLabel = document.getElementById(`detune${channel}`);
+                    detuneSlider.addEventListener('input', (e) => {
+                        const value = parseInt(e.target.value);
+                        detuneLabel.textContent = value;
+                        if (this.isInitialized) {
+                            this.synth.setSoftDetune(channel, value);
+                        }
+                    });
+                }
+            }
+            
+            setupEventListeners() {
+                document.getElementById('startBtn').addEventListener('click', async () => {
+                    try {
+                        await this.synth.start();
+                        this.updateStatus('Audio started');
+                        document.getElementById('startBtn').classList.add('active');
+                        document.getElementById('stopBtn').classList.remove('active');
+                    } catch (error) {
+                        this.showError(`Failed to start audio: ${error.message}`);
+                    }
+                });
+                
+                document.getElementById('stopBtn').addEventListener('click', () => {
+                    this.synth.stop();
+                    this.updateStatus('Audio stopped');
+                    document.getElementById('stopBtn').classList.add('active');
+                    document.getElementById('startBtn').classList.remove('active');
+                });
+                
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.synth.reset();
+                    this.updateStatus('Reset complete');
+                });
+                
+                // Keyboard events
+                document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+                document.addEventListener('keyup', (e) => this.handleKeyUp(e));
+                
+                // Channel selection
+                document.addEventListener('keydown', (e) => {
+                    if (e.key >= '1' && e.key <= '3') {
+                        this.currentChannel = parseInt(e.key) - 1;
+                        this.updateChannelHighlight();
+                    }
+                });
+            }
+            
+            createKeyboard() {
+                const keyboard = document.getElementById('keyboard');
+                const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+                const keyMap = {
+                    'KeyA': 0, 'KeyW': 1, 'KeyS': 2, 'KeyE': 3, 'KeyD': 4, 'KeyF': 5,
+                    'KeyT': 6, 'KeyG': 7, 'KeyY': 8, 'KeyH': 9, 'KeyU': 10, 'KeyJ': 11,
+                    'KeyK': 12, 'KeyO': 13, 'KeyL': 14, 'KeyP': 15, 'Semicolon': 16
+                };
+                
+                // Create piano keys for 2 octaves starting from C4 (MIDI note 60)
+                for (let octave = 0; octave < 2; octave++) {
+                    for (let note = 0; note < 12; note++) {
+                        const midiNote = 60 + octave * 12 + note;
+                        const noteName = notes[note];
+                        const isBlack = noteName.includes('#');
+                        
+                        const key = document.createElement('div');
+                        key.className = `key ${isBlack ? 'black' : 'white'}`;
+                        key.textContent = `${noteName}${4 + octave}`;
+                        key.dataset.note = midiNote;
+                        
+                        key.addEventListener('mousedown', () => this.playNote(midiNote));
+                        key.addEventListener('mouseup', () => this.stopNote(midiNote));
+                        key.addEventListener('mouseleave', () => this.stopNote(midiNote));
+                        
+                        keyboard.appendChild(key);
+                    }
+                }
+                
+                this.keyMap = keyMap;
+            }
+            
+            handleKeyDown(e) {
+                if (e.repeat) return;
+                
+                const keyIndex = Object.keys(this.keyMap).indexOf(e.code);
+                if (keyIndex !== -1) {
+                    const midiNote = 60 + keyIndex; // Start from C4
+                    this.playNote(midiNote);
+                }
+            }
+            
+            handleKeyUp(e) {
+                const keyIndex = Object.keys(this.keyMap).indexOf(e.code);
+                if (keyIndex !== -1) {
+                    const midiNote = 60 + keyIndex;
+                    this.stopNote(midiNote);
+                }
+            }
+            
+            playNote(midiNote) {
+                if (this.pressedKeys.has(midiNote)) return;
+                
+                this.pressedKeys.add(midiNote);
+                
+                if (this.isInitialized) {
+                    this.synth.noteOn(this.currentChannel, midiNote, 100);
+                }
+                
+                // Visual feedback
+                const keyElement = document.querySelector(`[data-note="${midiNote}"]`);
+                if (keyElement) {
+                    keyElement.classList.add('pressed');
+                }
+                
+                this.updateStatus(`Playing note ${midiNote} on channel ${this.currentChannel}`);
+            }
+            
+            stopNote(midiNote) {
+                if (!this.pressedKeys.has(midiNote)) return;
+                
+                this.pressedKeys.delete(midiNote);
+                
+                if (this.isInitialized) {
+                    this.synth.noteOff(this.currentChannel, midiNote);
+                }
+                
+                // Visual feedback
+                const keyElement = document.querySelector(`[data-note="${midiNote}"]`);
+                if (keyElement) {
+                    keyElement.classList.remove('pressed');
+                }
+            }
+            
+            updateChannelHighlight() {
+                // Remove previous highlights
+                document.querySelectorAll('.channel').forEach(ch => ch.style.borderColor = '#333');
+                
+                // Highlight current channel
+                document.getElementById(`channel${this.currentChannel}`).style.borderColor = '#00ff00';
+                
+                this.updateStatus(`Selected channel: ${this.currentChannel}`);
+            }
+            
+            updateStatus(message) {
+                document.getElementById('status').textContent = `Status: ${message}`;
+            }
+            
+            showError(message) {
+                const errorDiv = document.getElementById('error');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // Initialize the demo
+        const demo = new YM2149Demo();
+        demo.init();
+        
+        // Set initial channel highlight
+        demo.updateChannelHighlight();
+    </script>
+</body>
+</html>
